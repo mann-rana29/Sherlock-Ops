@@ -1,0 +1,4 @@
+[
+  {"service_id":"svc-payments","name":"payments-service","environment":"production","status":"degraded","current_deployment_id":"dep-8821","team_id":"payments"},
+  {"service_id":"svc-search","name":"search-service","environment":"production","status":"healthy","current_deployment_id":"dep-7712","team_id":"search"}
+]

@@ -1,0 +1,8 @@
+[
+  {"timestamp":"2026-09-13T13:59:00Z","service_id":"svc-payments","metric":"error_rate","value":0.01},
+  {"timestamp":"2026-09-13T14:02:00Z","service_id":"svc-payments","metric":"error_rate","value":0.21},
+  {"timestamp":"2026-09-13T14:04:00Z","service_id":"svc-payments","metric":"error_rate","value":0.34},
+  {"timestamp":"2026-09-13T14:05:00Z","service_id":"svc-payments","metric":"latency_ms","value":410},
+  {"timestamp":"2026-09-13T13:59:00Z","service_id":"svc-search","metric":"latency_ms","value":180},
+  {"timestamp":"2026-09-13T14:05:00Z","service_id":"svc-search","metric":"latency_ms","value":620}
+]

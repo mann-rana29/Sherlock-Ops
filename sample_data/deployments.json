@@ -1,0 +1,5 @@
+[
+  {"deployment_id":"dep-8821","service_id":"svc-payments","version":"2026.09.13.4","deployed_at":"2026-09-13T14:01:00Z","status":"active","commit_sha":"8f31abc"},
+  {"deployment_id":"dep-8819","service_id":"svc-payments","version":"2026.09.12.8","deployed_at":"2026-09-12T18:30:00Z","status":"superseded","commit_sha":"7e21def"},
+  {"deployment_id":"dep-7712","service_id":"svc-search","version":"2026.09.13.2","deployed_at":"2026-09-13T12:15:00Z","status":"active","commit_sha":"2aa91cd"}
+]
