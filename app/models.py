@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from enums import Role, Metric
+from app.enums import Role, Metric
 from datetime import datetime
 
 class Engineer(BaseModel):
@@ -11,7 +11,7 @@ class Engineer(BaseModel):
 class Incident(BaseModel):
     incident_id : str
     title : str
-    severity : float
+    severity : str
     service_id : str
     status : str
     created_at : datetime
@@ -28,7 +28,7 @@ class Service(BaseModel):
 class Deployment(BaseModel):
     deployment_id : str
     service_id : str
-    version : float
+    version : str
     deployed_at : datetime
     status : str
     commit_sha : str
