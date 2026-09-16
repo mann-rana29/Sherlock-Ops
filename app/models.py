@@ -2,12 +2,6 @@ from pydantic import BaseModel
 from app.enums import Role, Metric
 from datetime import datetime
 
-class Engineer(BaseModel):
-    engineer_id : str
-    team_id : str
-    role : Role
-    environment : str
-
 class Incident(BaseModel):
     incident_id : str
     title : str
