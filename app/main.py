@@ -12,7 +12,7 @@ model = ChatGoogleGenerativeAI(
 )
 
 @dataclass
-class RuntimeContext():
+class RuntimeContext:
     engineer_id : str
     team_id : str
     role : Role
@@ -31,3 +31,25 @@ agent = create_agent(
     model=model,
     tools=tools,
 )
+
+context = RuntimeContext(
+    engineer_id="eng-001",
+    team_id="payments",
+    role="senior_engineer",
+    environment="production"
+)
+
+result = agent.invoke({
+    "messages" : [
+        {
+            "role" : "user",
+            "content" : "get me the incident of id INC-1042"
+        }
+        
+    ]
+}, context=context)
+
+for message in result["messages"]:
+    print("\n---")
+    print(type(message).__name__)
+    print(message)
