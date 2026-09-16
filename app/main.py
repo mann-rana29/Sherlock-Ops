@@ -4,6 +4,7 @@ from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.config import GOOGLE_API_KEY
 from app.tools.tool import get_incident_tool, get_recent_deployments_tool, search_logs_tool, get_metrics_tool, search_runbooks_tool, get_service_status_tool
+from app.investigation_workflow import graph
 
 model = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite", 
@@ -39,17 +40,35 @@ context = RuntimeContext(
     environment="production"
 )
 
-result = agent.invoke({
-    "messages" : [
-        {
-            "role" : "user",
-            "content" : "get me the incident of id INC-1042"
-        }
+# result = agent.invoke({
+#     "messages" : [
+#         {
+#             "role" : "user",
+#             "content" : "Investigate INC-167042 and tell me the likely root cause."
+#         }
         
-    ]
-}, context=context)
+#     ]
+# }, context=context)
 
-for message in result["messages"]:
-    print("\n---")
-    print(type(message).__name__)
-    print(message)
+initial_state = {
+    "incident_id": "INC-1042",
+    "incident": {},
+    "service": "",
+    "deployments": [],
+    "logs": [],
+    "metrics": [],
+    "runbooks": [],
+    "conclusion": ""
+}
+
+result = graph.invoke(initial_state)
+
+print(result["conclusion"])
+
+
+# for message in result["messages"]:
+#     print("\n---")
+#     print(type(message).__name__)
+#     print(message)
+
+# print(result["messages"][-1].text)
