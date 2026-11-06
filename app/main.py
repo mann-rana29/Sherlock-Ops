@@ -1,7 +1,10 @@
 from dataclasses import dataclass
-from app.enums import Role
+
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.types import Command
+
+from app.enums import Role
 from app.config import GOOGLE_API_KEY
 from app.tools.tool import get_incident_tool, get_recent_deployments_tool, search_logs_tool, get_metrics_tool, search_runbooks_tool, get_service_status_tool
 from app.investigation_workflow import graph
@@ -50,25 +53,68 @@ context = RuntimeContext(
 #     ]
 # }, context=context)
 
-initial_state = {
-    "incident_id": "INC-1042",
-    "incident": {},
-    "service": "",
-    "deployments": [],
-    "logs": [],
-    "metrics": [],
-    "runbooks": [],
-    "conclusion": ""
-}
-
-result = graph.invoke(initial_state)
-
-print(result["conclusion"])
-
-
 # for message in result["messages"]:
 #     print("\n---")
 #     print(type(message).__name__)
 #     print(message)
 
 # print(result["messages"][-1].text)
+
+initial_state = {
+    "incident_id": "INC-1042",
+    "incident": None,
+    "service": "",
+    "deployments": [],
+    "logs": [],
+    "metrics": [],
+    "runbooks": [],
+    "conclusion": "",
+    "proposed_action" : {},
+    "approval" : {},
+    "remediation_result" : {},
+    "verification" : {}
+}
+
+config = {
+    "configurable" : {
+        "thread_id" : "INC-1042"
+    }
+}
+
+result = graph.invoke(
+    initial_state,
+    config=config
+)
+
+print("\n------ INVESTIGATION ------")
+print(result["conclusion"])
+
+interrupts = result.get("__interrupt__", [])
+
+if interrupts:
+    print("------ HUMAN APPROVAL ------")
+
+    for item in interrupts:
+        print(item.value)
+
+    decision = input(
+        "\nApprove proposed remediation? (yes/no): "
+    ).strip().lower() 
+
+    approved = decision == "yes"
+
+    result = graph.invoke(
+        Command(
+            resume={
+                "approved" : approved,
+                "approved_by" : context.engineer_id
+            }
+        ),
+        config = config
+    )
+
+
+print("\n------ FINAL RESULT ------")
+
+print("Remediation: ", result.get("remediation_result"))
+print("Verification: ", result.get("verification"))

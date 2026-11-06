@@ -139,7 +139,7 @@ def propose_remediation_node(state : InvestigationState):
     faulty_deployment = relevant_deployments[0]
 
     successful_statuses = {
-        "success", "successful" , "succeeded"
+        "success", "successful" , "succeeded", "superseded"
     }
 
     previous_deployments = [
