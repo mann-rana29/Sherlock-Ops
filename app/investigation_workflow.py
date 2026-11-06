@@ -1,15 +1,21 @@
 from app.tools.tool import get_incident_tool, get_recent_deployments_tool, search_logs_tool, get_metrics_tool, search_runbooks_tool, get_service_status_tool
 from langgraph.graph import StateGraph, START, END
-from typing import TypedDict
+from typing import TypedDict, Any
+from langgraph.types import interrupt
+from langgraph.checkpoint.memory import MemorySaver
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.config import GOOGLE_API_KEY
+
+from app.models import Incident, Deployment
 
 model = ChatGoogleGenerativeAI(
     model= "gemini-3.1-flash-lite",
     api_key = GOOGLE_API_KEY,
     temperature  = 0.1
 )
+
+checkpointer = MemorySaver()
 
 class InvestigationState(TypedDict):
     incident_id : str
@@ -21,6 +27,10 @@ class InvestigationState(TypedDict):
     runbooks : list[dict]
     conclusion : str
 
+    proposed_action : dict
+    approval : dict
+    remediation_result : dict
+    verification : dict
 
 def get_incident_node(state : InvestigationState):
     incident = get_incident_tool.invoke({"incident_id" : state["incident_id"]})
@@ -106,6 +116,136 @@ def analyze_incident_node(state : InvestigationState):
         "conclusion" : conclusion.text
     }
 
+def propose_remediation_node(state : InvestigationState):
+
+    deployments = state["deployments"]
+    incident = state["incident"]
+
+    relevant_deployments = [
+        dep for dep in deployments
+        if dep.deployed_at <= incident.created_at
+    ]
+
+    relevant_deployments.sort(
+        key= lambda dep: dep.deployed_at,
+        reverse=True
+    )
+
+    if len(relevant_deployments) < 2:
+        raise ValueError(
+            "Not enough deployment history to propose rollback."
+        )
+
+    faulty_deployment = relevant_deployments[0]
+
+    successful_statuses = {
+        "success", "successful" , "succeeded"
+    }
+
+    previous_deployments = [
+        dep for dep in relevant_deployments[1:]
+        if dep.status.lower() in successful_statuses
+    ]
+
+    if not previous_deployments:
+        raise ValueError(
+            "No previous successful deployment found"
+        )
+
+    target = previous_deployments[0]
+
+    action = {
+        "action" : "ROLLBACK",
+        "service" : incident.service_id,
+        "faulty_deployment" : faulty_deployment.deployment_id,
+        "target_deployment" : target.deployment_id,
+        "target_version" : target.version,
+        "target_commit" : target.commit_sha
+    }
+
+    print("\nRemediation proposal generated.")
+
+    return {
+        "proposed_action" : action
+    }
+
+def human_approval_node(state : InvestigationState):
+
+    action = state["proposed_action"]
+
+    decision = interrupt({
+        "message" : "Human approval required",
+        "incident_id" : state["incident_id"],
+        "action" : action,
+        "reason" : state["conclusion"]
+    })
+
+    if not isinstance(decision,dict):
+        raise ValueError("Invalid approval response.")
+
+    if not isinstance(decision.get("approved"), bool):
+        raise ValueError("Approval must be True or False.")
+
+    return {
+        "approval" : decision
+    }
+
+def route_after_approval_node(state : InvestigationState):
+
+    if state["approval"]["approved"]:
+        return "execute_remediation"
+
+    return "rejected"
+
+def execute_remediation_node(state : InvestigationState):
+
+    action = state["proposed_action"]
+
+    print("\nExecuting mock rollback...")
+
+    result = {
+        "status" : "SIMULATED_SUCCESS",
+        "service" : action["service"],
+        "deployment_id" : action["target_deployment"],
+        "rolled_back_to" : action["target_version"],
+        "commit" : action["target_commit"]
+    }
+
+    return {
+        "remediation_result" : result
+    }
+
+def rejected_node(state: InvestigationState):
+
+    return {
+        "remediation_result" : {
+            "status" : "REJECTED",
+            "message" : "Human rejected the proposed rollback."
+        }
+    }
+
+def verify_remediation_node(state : InvestigationState):
+    result = state["remediation_result"]
+
+    if result["status"] == "SIMULATED_SUCCESS":
+
+        verification = {
+            "status" : "SIMULATED",
+            "message" : (
+                "Mock rollback completed. "
+                "Actual service health has not been verified."
+            )
+        }
+    else:
+        verification = {
+            "status" : "FAILED",
+            "message" : "Remediation was not successful."
+        }
+
+    return {
+        "verification" : verification
+    }
+
 builder = StateGraph(InvestigationState)
 
 builder.add_node("get_incident", get_incident_node)
@@ -115,6 +255,12 @@ builder.add_node("search_runbooks", search_runbooks_node)
 builder.add_node("get_service_status", get_service_status_node)
 builder.add_node("search_logs", search_logs_node)
 builder.add_node("analyze_incident", analyze_incident_node)
+builder.add_node("propose_remediation",propose_remediation_node)
+builder.add_node("human_approval",human_approval_node)
+# builder.add_node("route_after_approval", route_after_approval_node)
+builder.add_node("execute_remediation", execute_remediation_node)
+builder.add_node("verify_remediation", verify_remediation_node)
+builder.add_node("rejected", rejected_node)
 
 builder.add_edge(START,"get_incident")
 builder.add_edge("get_incident","get_service_status")
@@ -123,7 +269,23 @@ builder.add_edge("get_recent_deployments", "search_logs")
 builder.add_edge("search_logs", "get_metrics")
 builder.add_edge("get_metrics","search_runbooks")
 builder.add_edge("search_runbooks","analyze_incident")
-builder.add_edge("analyze_incident",END)
+builder.add_edge("analyze_incident","propose_remediation")
+builder.add_edge("propose_remediation", "human_approval")
 
-graph = builder.compile()
+builder.add_conditional_edges(
+    "human_approval",
+    route_after_approval_node,
+    {
+        "execute_remediation" : "execute_remediation",
+        "rejected" : "rejected"
+    }
+)
+
+builder.add_edge("execute_remediation", "verify_remediation")
+builder.add_edge("verify_remediation", END)
+builder.add_edge("rejected",END)
+
+graph = builder.compile(
+    checkpointer=checkpointer
+)
 
