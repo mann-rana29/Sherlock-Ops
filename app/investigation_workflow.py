@@ -8,6 +8,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from app.config import GOOGLE_API_KEY
 
 from app.models import Incident, Deployment
+from app.guards.remediation_guard import validate_rollback
 
 model = ChatGoogleGenerativeAI(
     model= "gemini-3.1-flash-lite",
@@ -153,6 +154,14 @@ def propose_remediation_node(state : InvestigationState):
         )
 
     target = previous_deployments[0]
+    valid, message = validate_rollback(
+        faulty_deployment=faulty_deployment,
+        target_deployment=target,
+        incident = state["incident"]
+    )
+
+    if not valid:
+        raise ValueError(f"Remediation blocked : {message}")
 
     action = {
         "action" : "ROLLBACK",
