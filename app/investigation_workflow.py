@@ -67,6 +67,7 @@ def get_recent_deployments_node(state : InvestigationState):
     }
 
 def search_logs_node(state : InvestigationState):
+    service
     logs = search_logs_tool.invoke({"service_id" : state["incident"].service_id,"query": "500"})
 
     return {
