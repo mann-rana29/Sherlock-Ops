@@ -17,7 +17,7 @@ def validate_evidence(records, service_id, source, limit):
                 f"Unrelated service data detected in {source}."
             )
 
-    if len(records) > limit:
-            records = records[:limit]
-            
-    return records
+    # if len(records) > limit:
+    #         records = records[:limit]
+
+    return records[:limit]

@@ -54,7 +54,7 @@ def test_cannot_rollback_to_same_deployment(
     )
 
     assert valid is False
-    assert message == "Cannot roll back to the same deployment"
+    assert message == "Cannot roll back to the same deployment."
 
 def test_target_must_belong_to_same_service(
     faulty_deployment,
@@ -70,7 +70,7 @@ def test_target_must_belong_to_same_service(
     )
 
     assert valid is False
-    assert message == "Rollback target belongs to another service"
+    assert message == "Rollback target belongs to another service."
 
 def test_target_must_be_older(
     faulty_deployment,

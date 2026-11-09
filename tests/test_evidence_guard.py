@@ -41,7 +41,7 @@ def test_evidence_exceeding_limit():
         limit=20
     )
 
-    assert len(records) == 20
+    assert len(result) == 20
 
 def test_unrelated_service_evidence():
     records = [
