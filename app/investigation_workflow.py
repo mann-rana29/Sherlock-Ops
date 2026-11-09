@@ -67,22 +67,43 @@ def get_recent_deployments_node(state : InvestigationState):
     }
 
 def search_logs_node(state : InvestigationState):
-    service
-    logs = search_logs_tool.invoke({"service_id" : state["incident"].service_id,"query": "500"})
+    service_id = state["incident"].service_id
+    
+    logs = search_logs_tool.invoke({"service_id" : service_id, "query": "500"})
+
+    logs = validate_evidence(logs, service_id,"logs", 20)
 
     return {
         "logs" : logs
     }
 
 def get_metrics_node(state : InvestigationState):
-    metrics = get_metrics_tool.invoke({"service_id" : state["incident"].service_id, "metric_name":  "error_rate"})
+    service_id = state["incident"].service_id
+    
+    metrics = get_metrics_tool.invoke({"service_id" : service_id, "metric_name":  "error_rate"})
+
+    metrics = validate_evidence(
+        metrics,
+        service_id,
+        "metrics",
+        20
+    )
 
     return {
         "metrics" : metrics
     }
 
 def search_runbooks_node(state : InvestigationState):
-    runbooks = search_runbooks_tool.invoke({"service_id" : state["incident"].service_id, "query": "500"})
+    service_id = state["incident"].service_id
+    
+    runbooks = search_runbooks_tool.invoke({"service_id" : service_id, "query": "500"})
+
+    runbooks = validate_evidence(
+        runbooks,
+        service_id,
+        "runbooks",
+        5
+    )
 
     return {
         "runbooks" : runbooks
