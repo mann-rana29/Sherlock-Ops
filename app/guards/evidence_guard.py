@@ -8,9 +8,6 @@ def validate_evidence(records, service_id, source, limit):
     if not isinstance(records, list):
         raise ValueError(f"Invalid {source} data.")
 
-    if len(records) > limit:
-        records = records[:limit]
-
     for record in records:
 
         record_service = get_field(record, "service_id")
@@ -20,4 +17,7 @@ def validate_evidence(records, service_id, source, limit):
                 f"Unrelated service data detected in {source}."
             )
 
+    if len(records) > limit:
+            records = records[:limit]
+            
     return records

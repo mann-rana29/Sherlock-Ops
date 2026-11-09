@@ -258,8 +258,9 @@ def human_approval_node(state : InvestigationState):
     }
 
 def route_after_approval_node(state : InvestigationState):
+    approval = state.get("approval", [])
 
-    if state["approval"]["approved"]:
+    if approval.get("approved") is True:
         return "execute_remediation"
 
     return "rejected"
